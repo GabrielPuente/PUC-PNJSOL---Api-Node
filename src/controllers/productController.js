@@ -1,73 +1,93 @@
 const express = require('express');
 const router = express.Router();
 
-const lowdb = require('lowdb');
-const FileSync = require('lowdb/adapters/FileSync')
-const adapter = new FileSync('db.json')
-const db = lowdb(adapter)
-
+const knex = require('knex')({
+    client: 'pg',
+    connection: {
+        connectionString: process.env.DATABASE_URL,
+        ssl: { rejectUnauthorized: false },
+    }
+});
 
 router.get('/', (req, res) => {
 
-    const product = db
-        .get('products')
-        .value()
-
-    return res.json(product);
+    knex.select('*')
+        .from('produto')
+        .then(produtos => res.status(200).json(produtos))
+        .catch(err => {
+            res.status(500).json({
+                message: 'Erro ao recuperar produtos - ' + err.message
+            })
+        })
 });
 
 router.get('/:id', (req, res) => {
 
-    const product = db
-        .get('products')
-        .find({ id: parseInt(req.params.id) })
-        .value()
-
-    return res.json(product);
+    knex.select('*')
+        .from('produto')
+        .where({ id: req.params.id })
+        .then(produto => res.status(200).json(produto))
+        .catch(err => {
+            res.status(500).json({
+                message: 'Erro ao recuperar produtos - ' + err.message
+            })
+        })
 });
 
 router.post('/', (req, res) => {
 
-    const body = req.body;
+    if (req.body) {
 
-    db
-        .get('products')
-        .push({
-            id: Math.floor(Math.random() * 9999),
-            description: body.description,
-            value: body.value,
-            brand: body.brand
-        })
-        .write()
+        const body = req.body;
 
-    return res.json('ok');
+        knex('produto')
+            .insert({
+                descricao: body.descricao,
+                valor: body.valor,
+                marca: body.marca
+            }, ['id'])
+            .then(result => {
+                let produto = result[0];
+                res.status(201).json({ "id": produto.id });
+                return;
+            })
+            .catch(err => {
+                res.status(500).json({
+                    message: 'Erro ao registrar produto - ' + err.message
+                })
+            })
+    }
 });
 
 router.put('/:id', (req, res) => {
 
-    const body = req.body;
+    if (req.body) {
+        const id = parseInt(req.params.id);
+        const body = req.body;
 
-    db
-        .get('products')
-        .find({ id: parseInt(req.params.id) })
-        .assign({ description: body.description }, { value: body.value, }, { brand: body.brand, },)
-        .value()
-
-    db.write();
-
-    return res.json('ok');
+        knex('produto')
+            .where({ id })
+            .update({
+                descricao: body.descricao,
+                valor: body.valor,
+                marca: body.marca
+            })
+            .then(result => {
+                res.status(201).json("Atualizado com sucesso");
+            });
+    }
 });
 
 router.delete('/:id', (req, res) => {
 
-    console.log(parseInt(req.params.id));
+    const id = parseInt(req.params.id);
 
-    db
-        .get('products')
-        .remove({ id: parseInt(req.params.id) })
-        .write();
-
-    return res.json('ok');
+    knex('produto')
+        .delete()
+        .where({ id })
+        .then(result => {
+            res.status(200).json("Excluido com sucesso");
+        });
 });
 
 
