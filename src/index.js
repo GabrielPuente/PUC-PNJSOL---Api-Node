@@ -40,5 +40,6 @@ app.get('/', (req, res) => {
 
 require('./controllers/productController')(app);
 require('./controllers/gameController')(app);
+require('./controllers/userController')(app);
 
 app.listen(port);

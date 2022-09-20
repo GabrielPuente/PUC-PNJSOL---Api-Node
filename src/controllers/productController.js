@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 
 const knex = require('knex')({
     client: 'pg',
@@ -9,7 +10,36 @@ const knex = require('knex')({
     }
 });
 
-router.get('/', (req, res) => {
+const checkToken = (req, res, next) => {
+    let headerAuth = req.get('authorization');
+
+    if (!headerAuth) {
+        res.status(403).json({ message: "Token invalido" });
+    }
+
+    let token = headerAuth.split(' ')[1];
+    jwt.verify(token, process.env.SECRET_KEY, (err, decodeToken) => {
+        if (err) {
+            res.status(401).json({ message: 'Acesso negado' })
+            return
+        }
+        req.roles = decodeToken.roles;
+        next();
+    });
+}
+
+const isAdmin = (req, res, next) => {
+    var roles = req.roles.split(';');
+    var role = roles.find(role => role == 'ADMIN');
+
+    if (!role) {
+        res.status(401).json({ message: 'Acesso negado' })
+    }
+    next();
+}
+
+
+router.get('/', checkToken, (req, res) => {
 
     knex.select('*')
         .from('produto')
@@ -21,7 +51,7 @@ router.get('/', (req, res) => {
         })
 });
 
-router.get('/:id', (req, res) => {
+router.get('/:id', checkToken, (req, res) => {
 
     knex.select('*')
         .from('produto')
@@ -34,7 +64,7 @@ router.get('/:id', (req, res) => {
         })
 });
 
-router.post('/', (req, res) => {
+router.post('/', checkToken, isAdmin, (req, res) => {
 
     if (req.body) {
 
@@ -59,7 +89,7 @@ router.post('/', (req, res) => {
     }
 });
 
-router.put('/:id', (req, res) => {
+router.put('/:id', checkToken, isAdmin, (req, res) => {
 
     if (req.body) {
         const id = parseInt(req.params.id);
@@ -78,7 +108,7 @@ router.put('/:id', (req, res) => {
     }
 });
 
-router.delete('/:id', (req, res) => {
+router.delete('/:id', checkToken, isAdmin, (req, res) => {
 
     const id = parseInt(req.params.id);
 
