@@ -12,15 +12,33 @@ const port = process.env.PORT || 3000;
 app.get('/', (req, res) => {
     res.send(`Aplicação rodando. <br/><br/>
 
-    Rotas: /products<br/><br/>
-    Modelo - Product <br/>
-    Campos:<br/><br/>
-    id: int,<br/>
-    description: string,<br/>
-    value: float,<br/>
-    brand: string`);
+    Rota de produtos: /products<br/><br/>
+    Modelo - Produto <br/><br/>
+    {
+        "id": int,
+        "marca": string,
+        "descricao": string,
+        "valor": numeric,
+    }
+    
+    <br/><br/><br/><br/>
+    
+    Rota de games: /games<br/><br/>
+    Modelo - Game <br/><br/>
+    {
+        "id": int,
+        "nome": string,
+        "descricao": string,
+        "valor": numeric,
+        "data_lancamento": date
+    }
+
+    `
+    
+    );
 });
 
 require('./controllers/productController')(app);
+require('./controllers/gameController')(app);
 
 app.listen(port);
