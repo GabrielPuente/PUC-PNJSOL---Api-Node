@@ -12,7 +12,31 @@ const port = process.env.PORT || 3000;
 app.get('/', (req, res) => {
     res.send(`Aplicação rodando. <br/><br/>
 
-    Rota de produtos: /products<br/><br/>
+    Rota de produtos: /users<br/>
+    Modelo - Usuario <br/><br/>
+    {
+        "id": int,
+        "nome": string,
+        "email": string,
+        "login": string,
+        "senha": string,
+        "role": string
+    }
+    <br/><br/>
+    Todos os endpoints exigem login<br/>
+    Gets pode ser qualquer um,<br/>
+    Post, Put e deletes, exigem um admin logado.<br/>
+    <br/>
+    Post/users<br/>
+    "user",<br/>
+    "12345"<br/>
+    <br/>
+    "admin",<br/>
+    "12345"<br/>
+
+    <br/><br/><br/>
+
+    Rota de produtos: /products<br/>
     Modelo - Produto <br/><br/>
     {
         "id": int,
@@ -21,9 +45,9 @@ app.get('/', (req, res) => {
         "valor": numeric,
     }
     
-    <br/><br/><br/><br/>
+    <br/><br/><br/>
     
-    Rota de games: /games<br/><br/>
+    Rota de games: /games<br/>
     Modelo - Game <br/><br/>
     {
         "id": int,
