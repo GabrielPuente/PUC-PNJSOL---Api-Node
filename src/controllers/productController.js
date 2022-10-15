@@ -56,6 +56,7 @@ router.get('/:id', checkToken, (req, res) => {
     knex.select('*')
         .from('produto')
         .where({ id: req.params.id })
+        .first()
         .then(produto => res.status(200).json(produto))
         .catch(err => {
             res.status(500).json({
