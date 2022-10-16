@@ -16,13 +16,14 @@ const checkToken = (req, res, next) => {
 
     if (!headerAuth) {
         res.status(403).json({ message: "Token invalido" });
+        return;
     }
 
     let token = headerAuth.split(' ')[1];
     jwt.verify(token, process.env.SECRET_KEY, (err, decodeToken) => {
         if (err) {
             res.status(401).json({ message: 'Acesso negado' })
-            return
+            return;
         }
         req.roles = decodeToken.roles;
         next();
@@ -34,8 +35,38 @@ const isAdmin = (req, res, next) => {
     var role = roles.find(role => role == 'ADMIN');
 
     if (!role) {
-        res.status(401).json({ message: 'Acesso negado' })
+        res.status(401).json({ message: 'Acesso negado' });
+        return;
     }
+    next();
+}
+
+const validate = (req, res, next) => {
+    const body = req.body;
+    var messageError = [];
+    var error = false;
+
+    if (!body.nome) {
+        error = true;
+        messageError.push("Nome não preenchido");
+    }
+    if (!body.email) {
+        error = true;
+        messageError.push("Email não preenchido");
+    }
+    if (!body.login) {
+        error = true;
+        messageError.push("Login não preenchido");
+    }
+    if (!body.roles || body.roles.length == 0) {
+        error = true;
+        messageError.push("Roles não preenchida");
+    }
+    if (error) {
+        res.status(404).json({ message: messageError.join(", ") });
+        return;
+    }
+
     next();
 }
 
@@ -65,51 +96,57 @@ router.get('/:id', checkToken, (req, res) => {
         })
 });
 
-router.post('/login',  (req, res) => {
+router.post('/login', (req, res) => {
 
-    if (req.body) {
+    if(req.body) {
 
-        knex
-            .select('*').from('usuario').where({ login: req.body.login })
-            .then(usuarios => {
+    knex
+        .select('*').from('usuario').where({ login: req.body.login })
+        .then(usuarios => {
 
-                if (usuarios.length) {
-                    let usuario = usuarios[0]
-                    let checkSenha = bcrypt.compareSync(req.body.senha, usuario.senha);
+            if (usuarios.length) {
+                let usuario = usuarios[0]
+                let checkSenha = bcrypt.compareSync(req.body.senha, usuario.senha);
 
-                    if (checkSenha) {
-                        var tokenJWT = jwt.sign({ id: usuario.id, roles: usuario.roles },
-                            process.env.SECRET_KEY, {
-                            expiresIn: 3600
-                        })
+                if (checkSenha) {
+                    var tokenJWT = jwt.sign({ id: usuario.id, roles: usuario.roles },
+                        process.env.SECRET_KEY, {
+                        expiresIn: 3600
+                    })
 
-                        res.status(200).json({
-                            id: usuario.id,
-                            login: usuario.login,
-                            nome: usuario.nome,
-                            roles: usuario.roles,
-                            token: tokenJWT
-                        })
-                        return
-                    }
-                    else {
-                        res.status(400).json({ message: 'Login ou senha incorretos' })
-                    }
+                    res.status(200).json({
+                        id: usuario.id,
+                        login: usuario.login,
+                        nome: usuario.nome,
+                        roles: usuario.roles,
+                        token: tokenJWT
+                    })
+                    return
                 }
+                else {
+                    res.status(400).json({ message: 'Login ou senha incorretos' })
+                }
+            }
+        })
+        .catch(err => {
+            res.status(500).json({
+                message: 'Erro ao verificar login - ' + err.message
             })
-            .catch(err => {
-                res.status(500).json({
-                    message: 'Erro ao verificar login - ' + err.message
-                })
-            })
-    }
+        })
+}
 });
 
-router.post('/', checkToken, isAdmin, (req, res) => {
+router.post('/', checkToken, isAdmin, validate, (req, res) => {
 
     if (req.body) {
 
         const body = req.body;
+
+        if (!body.senha) {
+            res.status(404).json({
+                message: 'Senha não preenchida'
+            });
+        }
 
         knex('usuario')
             .insert({
@@ -132,7 +169,7 @@ router.post('/', checkToken, isAdmin, (req, res) => {
     }
 });
 
-router.put('/:id', checkToken, isAdmin, (req, res) => {
+router.put('/:id', checkToken, isAdmin, validate, (req, res) => {
 
     if (req.body) {
         const id = parseInt(req.params.id);
@@ -144,7 +181,6 @@ router.put('/:id', checkToken, isAdmin, (req, res) => {
                 nome: body.nome,
                 email: body.email,
                 login: body.login,
-                senha: bcrypt.hashSync(body.senha, 8),
                 roles: body.roles
             })
             .then(result => {
