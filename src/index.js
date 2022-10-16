@@ -2,17 +2,29 @@ require('dotenv').config();
 
 const express = require('express');
 const bodyParser = require('body-parser');
+const cors = require('cors');
 
 const app = express();
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
+app.use(cors({
+    origin: '*'
+}));
 
 const port = process.env.PORT || 3000;
 
 app.get('/', (req, res) => {
     res.send(`Aplicação rodando. <br/><br/>
 
-    Rota de produtos: /users<br/>
+    Rota para login: /users/login<br/>
+    Modelo - login <br/><br/>
+    {
+        "login": string,
+        "senha": string,
+    }
+    <br/><br/>
+
+    Rota de usuario: /users<br/>
     Modelo - Usuario <br/><br/>
     {
         "id": int,
@@ -23,11 +35,13 @@ app.get('/', (req, res) => {
         "role": string
     }
     <br/><br/>
+
     Todos os endpoints exigem login<br/>
     Gets pode ser qualquer um,<br/>
-    Post, Put e deletes, exigem um admin logado.<br/>
+    Posts, Puts e deletes, exigem um admin logado.<br/>
     <br/>
-    Post/users<br/>
+
+    Post/users/login<br/>
     "user",<br/>
     "12345"<br/>
     <br/>
@@ -56,9 +70,7 @@ app.get('/', (req, res) => {
         "valor": numeric,
         "data_lancamento": date
     }
-
     `
-    
     );
 });
 

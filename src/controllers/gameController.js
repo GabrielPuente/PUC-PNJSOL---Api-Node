@@ -15,13 +15,14 @@ const checkToken = (req, res, next) => {
 
     if (!headerAuth) {
         res.status(403).json({ message: "Token invalido" });
+        return;
     }
 
     let token = headerAuth.split(' ')[1];
     jwt.verify(token, process.env.SECRET_KEY, (err, decodeToken) => {
         if (err) {
             res.status(401).json({ message: 'Acesso negado' })
-            return
+            return;
         }
         req.roles = decodeToken.roles;
         next();
@@ -33,8 +34,37 @@ const isAdmin = (req, res, next) => {
     var role = roles.find(role => role == 'ADMIN');
 
     if (!role) {
-        res.status(401).json({ message: 'Acesso negado' })
+        res.status(401).json({ message: 'Acesso negado' });
+        return;
     }
+    next();
+}
+
+const validate = (req, res, next) => {
+    const body = req.body;
+    var messageError = [];
+    var error = false;
+    if (!body.nome) {
+        error = true;
+        messageError.push("Nome não preenchido");
+    }
+    if (!body.descricao) {
+        error = true;
+        messageError.push("Descricao não preenchido");
+    }
+    if (!body.valor || body.valor <= 0) {
+        error = true;
+        messageError.push("Valor não preenchido ou igual ou menor que zero");
+    }
+    if (!body.data_lancamento) {
+        error = true;
+        messageError.push("Data de lançamento não preenchida");
+    }
+    if (error) {
+        res.status(404).json({ message: messageError.join(", ") });
+        return;
+    }
+
     next();
 }
 
@@ -55,6 +85,7 @@ router.get('/:id', checkToken, (req, res) => {
     knex.select('*')
         .from('game')
         .where({ id: req.params.id })
+        .first()
         .then(game => res.status(200).json(game))
         .catch(err => {
             res.status(500).json({
@@ -63,7 +94,7 @@ router.get('/:id', checkToken, (req, res) => {
         })
 });
 
-router.post('/', checkToken, isAdmin, (req, res) => {
+router.post('/', checkToken, isAdmin, validate, (req, res) => {
 
     if (req.body) {
 
@@ -89,7 +120,7 @@ router.post('/', checkToken, isAdmin, (req, res) => {
     }
 });
 
-router.put('/:id', checkToken, isAdmin, (req, res) => {
+router.put('/:id', checkToken, isAdmin, validate, (req, res) => {
 
     if (req.body) {
         const id = parseInt(req.params.id);
